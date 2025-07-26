@@ -171,3 +171,10 @@ Ejemplo de Respuesta:
   "message": "Modelo online actualizado exitosamente con la nueva transacción."
 }
 ```
+
+## Diagramas de Arquitecturas
+
+[![Arquitectura pipeline de entrenamiento](images/arq1.png)]
+
+[![Arquitectura API](images/arq2.png)]
+
