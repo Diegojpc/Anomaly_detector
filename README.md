@@ -28,19 +28,20 @@ El proyecto sigue una estructura modular para facilitar su mantenimiento y escal
 ```
 anomaly_detector/
 ├── api/
-│ └── main.py # Lógica de la API (endpoints, lifespan)
+│ └── main.py                  # Lógica de la API (endpoints, lifespan)
 ├── data/
-│ └── data_transactions.csv # Conjunto de datos de entrenamiento inicial
+│ └── data_transactions.csv    # Conjunto de datos de entrenamiento inicial
 ├── models/
-│ └── (vacío inicialmente) # Directorio donde se guardan los modelos serializados
+│ └── (vacío inicialmente)     # Directorio donde se guardan los modelos serializados
 ├── src/
-│ ├── model.py # Pipeline de entrenamiento (incluye SMOTE)
-│ ├── predict.py # Lógica de inferencia del modelo híbrido
-│ └── update.py # Lógica de actualización incremental del modelo online
+│ ├── model.py                 # Pipeline de entrenamiento (incluye SMOTE)
+│ ├── predict.py               # Lógica de inferencia del modelo híbrido
+│ └── update.py                # Lógica de actualización incremental del modelo online
 ├── test/
-│ └── test_api.py # Pruebas unitarias para los endpoints de la API
-├── README.md # Este archivo
-└── requirements.txt # Dependencias del proyecto
+│ └── test_api.py              # Pruebas unitarias para los endpoints de la API
+├── README.md                  # Este archivo
+├── EDA.ipynb                  # Análisis exploratorio de datos
+└── requirements.txt           # Dependencias del proyecto
 ```
 
 ---
