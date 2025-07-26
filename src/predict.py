@@ -1,41 +1,55 @@
 # src/predict.py
 import pandas as pd
-import numpy as np
+from .model import create_features
 
-# Duplicamos la función de creación de características aquí
-def create_features(df: pd.DataFrame) -> pd.DataFrame:
-    df_copy = df.copy()
-    df_copy['timestamp'] = pd.to_datetime(df_copy['timestamp'])
-    df_copy['hour'], df_copy['day_of_week'], df_copy['day_of_month'] = df_copy['timestamp'].dt.hour, df_copy['timestamp'].dt.dayofweek, df_copy['timestamp'].dt.day
-    df_copy['type_recarga'] = (df_copy['transaction_type'] == 'recarga').astype(int)
-    recarga_mask = df_copy['type_recarga'] == 1
-    retiro_mask = df_copy['type_recarga'] == 0
-    expected_balance = df_copy['balance_before'].copy()
-    expected_balance[recarga_mask] += df_copy['amount'][recarga_mask]
-    expected_balance[retiro_mask] -= df_copy['amount'][retiro_mask]
-    df_copy['balance_diff_error'] = np.abs(df_copy['balance_after'] - expected_balance)
-    df_copy['is_overdraft'] = (df_copy['balance_after'] < 0).astype(int)
-    return df_copy
+def make_prediction(
+        input_data: pd.DataFrame,
+        batch_model, online_model,
+        scaler, features
+    ) -> dict:
+    """
+    Realiza una predicción de anomalía utilizando un enfoque híbrido.
 
-def make_prediction(input_data: pd.DataFrame, batch_model, online_model, scaler, features) -> dict:
+    Combina las predicciones de un modelo batch (estático) y un modelo
+    online (adaptable). Una transacción se considera anómala si cualquiera
+    de los dos modelos la marca como tal.
+
+    Args:
+        input_data (pd.DataFrame): DataFrame con la transacción a evaluar.
+        batch_model: Modelo de machine learning pre-entrenado (ej. LGBM).
+        online_model: Modelo de machine learning adaptable (ej. SGDClassifier).
+        scaler: Objeto StandardScaler ajustado.
+        features (list): Lista de nombres de las características a usar.
+
+    Returns:
+        dict: Un diccionario con el resultado de la predicción, incluyendo 
+        el score de anomalía y el detalle de cada modelo.
+    """
+    # 1. Aplicar la misma ingeniería de características que en el entrenamiento
     df_featured = create_features(input_data)
     X_input = df_featured[features]
+
+    # 2. Escalar los datos
     X_scaled = scaler.transform(X_input)
     
+    # 3. Obtener predicciones de ambos modelos
     pred_batch = batch_model.predict(X_scaled)[0]
     prob_batch = batch_model.predict_proba(X_scaled)[0][1]
     
     pred_online = online_model.predict(X_scaled)[0]
     prob_online = online_model.predict_proba(X_scaled)[0][1]
 
+    # 4. Combinar resultados (estrategia conservadora: si uno dice que es anomalía, lo es)
     is_anomaly = bool(pred_batch or pred_online)
     anomaly_score = max(float(prob_batch), float(prob_online))
     
     return {
         "is_anomaly": is_anomaly,
-        "anomaly_score": anomaly_score,
+        "anomaly_score": round(anomaly_score, 4),
         "details": {
             "batch_model_prediction": bool(pred_batch),
-            "online_model_prediction": bool(pred_online)
+            "batch_model_score": round(float(prob_batch), 4),
+            "online_model_prediction": bool(pred_online),
+            "online_model_score": round(float(prob_online), 4),
         }
     }
